@@ -1,0 +1,40 @@
+# Node.js dependencies
+node_modules/
+
+# Local environment variables
+.env
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Compiled output
+/dist
+/build
+
+# Jobs directory (runtime generated)
+backend/services/jobs/
+
+# VS Code settings
+.vscode/
+
+# Misc
+*.swp 
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
