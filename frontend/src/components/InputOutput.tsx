@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Copy, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useState, useEffect } from 'react';
 
 interface InputOutputProps {
   input: string;
@@ -15,6 +16,14 @@ interface InputOutputProps {
 
 const InputOutput = ({ input, onInputChange, output, isRunning, fontFamily }: InputOutputProps) => {
   const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState<string>('input');
+
+  // Auto-switch to output tab when running
+  useEffect(() => {
+    if (isRunning) {
+      setActiveTab('output');
+    }
+  }, [isRunning]);
 
   const handleCopyOutput = async () => {
     try {
@@ -39,7 +48,7 @@ const InputOutput = ({ input, onInputChange, output, isRunning, fontFamily }: In
   return (
     <Card className="h-full shadow-editor">
       <CardContent className="p-0 h-full">
-        <Tabs defaultValue="input" className="h-full flex flex-col">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
           <div className="border-b border-editor-border p-4 bg-gradient-surface">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="input">Input</TabsTrigger>

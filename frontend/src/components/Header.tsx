@@ -1,12 +1,9 @@
 import { Button } from '@/components/ui/button';
-import { Code2, Github, Settings } from 'lucide-react';
+import { Code2, Github } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
-interface HeaderProps {
-  onSettingsClick: () => void;
-}
 
-const Header = ({ onSettingsClick }: HeaderProps) => {
+const Header = () => {
   return (
     <header className="border-b border-editor-border bg-gradient-surface">
       <div className="flex items-center justify-between px-6 py-4">
@@ -30,16 +27,7 @@ const Header = ({ onSettingsClick }: HeaderProps) => {
         </div>
 
         <div className="flex items-center gap-3">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onSettingsClick}
-            className="gap-2"
-          >
-            <Settings className="h-4 w-4" />
-            Settings
-          </Button>
-          
+
           <Button
             variant="outline"
             size="sm"
@@ -47,7 +35,7 @@ const Header = ({ onSettingsClick }: HeaderProps) => {
             className="gap-2"
           >
             <a 
-              href="https://github.com" 
+              href="https://github.com/Bhardwaj-Devesh" 
               target="_blank" 
               rel="noopener noreferrer"
             >

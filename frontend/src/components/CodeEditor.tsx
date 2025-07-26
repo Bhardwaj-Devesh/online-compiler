@@ -2,7 +2,7 @@ import Editor from '@monaco-editor/react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Play, Copy, Download } from 'lucide-react';
+import { Play, Copy, Download, Settings as SettingsIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface CodeEditorProps {
@@ -13,6 +13,7 @@ interface CodeEditorProps {
   onRun: () => void;
   theme: 'light' | 'dark';
   fontFamily: string;
+  onSettingsClick: () => void; // Add prop for settings popup
 }
 
 const languages = [
@@ -30,7 +31,8 @@ const CodeEditor = ({
   onCodeChange, 
   onRun,
   theme,
-  fontFamily 
+  fontFamily,
+  onSettingsClick // Add prop
 }: CodeEditorProps) => {
   const { toast } = useToast();
 
@@ -91,7 +93,7 @@ const CodeEditor = ({
                 className="gap-2"
               >
                 <Copy className="h-4 w-4" />
-                Copy
+                
               </Button>
               <Button
                 variant="outline"
@@ -100,7 +102,16 @@ const CodeEditor = ({
                 className="gap-2"
               >
                 <Download className="h-4 w-4" />
-                Download
+                
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onSettingsClick}
+                className="gap-2"
+                aria-label="Editor Settings"
+              >
+                <SettingsIcon className="h-4 w-4" />
               </Button>
               <Button
                 onClick={onRun}

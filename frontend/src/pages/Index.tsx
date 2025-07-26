@@ -6,13 +6,8 @@ import InputOutput from '@/components/InputOutput';
 import SettingsPanel from '@/components/SettingsPanel';
 import { runCode } from '@/utils/codeRunner';
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription
+} from "@/components/ui/dialog";
 
 const defaultCode = {
   javascript: `// Welcome to CodeFlow!
@@ -110,7 +105,7 @@ const Index = () => {
 
     setIsRunning(true);
     setOutput('');
-    
+    await new Promise((resolve) => setTimeout(resolve, 50)); 
     try {
       const result = await runCode(language, code, input);
       setOutput(result);
@@ -135,7 +130,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header onSettingsClick={() => setIsSettingsOpen(true)} />
+      <Header />
       
       <main className="h-[calc(100vh-80px)] p-4">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 h-full">
@@ -149,6 +144,7 @@ const Index = () => {
               onRun={handleRun}
               theme={theme}
               fontFamily={fontFamily}
+              onSettingsClick={() => setIsSettingsOpen(true)}
             />
           </div>
           
@@ -165,15 +161,15 @@ const Index = () => {
         </div>
       </main>
 
-      {/* Settings Panel */}
-      <Sheet open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
-        <SheetContent>
-          <SheetHeader>
-            <SheetTitle>Editor Settings</SheetTitle>
-            <SheetDescription>
+      {/* Settings Modal */}
+      <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editor Settings</DialogTitle>
+            <DialogDescription>
               Customize your coding environment with themes and fonts.
-            </SheetDescription>
-          </SheetHeader>
+            </DialogDescription>
+          </DialogHeader>
           <div className="mt-6">
             <SettingsPanel
               theme={theme}
@@ -182,8 +178,8 @@ const Index = () => {
               onFontFamilyChange={setFontFamily}
             />
           </div>
-        </SheetContent>
-      </Sheet>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
