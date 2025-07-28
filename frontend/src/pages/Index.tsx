@@ -75,6 +75,10 @@ const Index = () => {
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [fontFamily, setFontFamily] = useState<string>('Fira Code');
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
+  const [problemTitle, setProblemTitle] = useState<string>('');
+  const [problemDescription, setProblemDescription] = useState<string>('');
+  const [problemConstraints, setProblemConstraints] = useState<string[]>([]);
+  const [constraintInput, setConstraintInput] = useState<string>('');
   
   const { toast } = useToast();
 
@@ -147,7 +151,6 @@ const Index = () => {
               onSettingsClick={() => setIsSettingsOpen(true)}
             />
           </div>
-          
           {/* Input/Output */}
           <div className="h-full">
             <InputOutput
@@ -156,6 +159,15 @@ const Index = () => {
               output={output}
               isRunning={isRunning}
               fontFamily={fontFamily}
+              language={language}
+              problemTitle={problemTitle}
+              problemDescription={problemDescription}
+              problemConstraints={problemConstraints}
+              setProblemTitle={setProblemTitle}
+              setProblemDescription={setProblemDescription}
+              setProblemConstraints={setProblemConstraints}
+              constraintInput={constraintInput}
+              setConstraintInput={setConstraintInput}
             />
           </div>
         </div>
