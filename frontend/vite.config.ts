@@ -10,8 +10,6 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [
     react(),
-    // You can conditionally add plugins here if needed like:
-    // mode === 'development' ? someDevOnlyPlugin() : null
   ],
   resolve: {
     alias: {

@@ -10,23 +10,6 @@ import {
 } from "@/components/ui/dialog";
 
 const defaultCode = {
-  javascript: `// Welcome to CodeFlow!
-console.log("Hello, World!");
-
-// Try changing this message and click Run
-const message = "JavaScript is awesome!";
-console.log(message);`,
-  
-  python: `# Welcome to CodeFlow!
-print("Hello, World!")
-
-# Try changing this message and click Run
-message = "Python is awesome!"
-print(message)
-
-# Uncomment the line below to test input
-# name = input("Enter your name: ")
-# print(f"Hello, {name}!")`,
   
   cpp: `#include <iostream>
 using namespace std;
@@ -53,22 +36,11 @@ int main() {
     }
 }`,
 
-  typescript: `// Welcome to CodeFlow!
-console.log("Hello, World!");
-
-// Try changing this message and click Run
-const message: string = "TypeScript is awesome!";
-console.log(message);
-
-// Type-safe function
-function greet(name: string): string {
-    return \`Hello, \${name}!\`;
-}`
 };
 
 const Index = () => {
-  const [language, setLanguage] = useState<string>('javascript');
-  const [code, setCode] = useState<string>(defaultCode.javascript);
+  const [language, setLanguage] = useState<string>('cpp');
+  const [code, setCode] = useState<string>(defaultCode.cpp);
   const [input, setInput] = useState<string>('');
   const [output, setOutput] = useState<string>('');
   const [isRunning, setIsRunning] = useState<boolean>(false);
@@ -160,6 +132,7 @@ const Index = () => {
               isRunning={isRunning}
               fontFamily={fontFamily}
               language={language}
+              code={code}
               problemTitle={problemTitle}
               problemDescription={problemDescription}
               problemConstraints={problemConstraints}

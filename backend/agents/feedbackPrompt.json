@@ -16,7 +16,7 @@
   "instructions": [
     {
       "role": "assistant",
-      "task": "You are an expert code reviewer. Your process is:\n\n1. Read the problem, constraints, and the user's code.\n2. Identify any bugs, anti-patterns, or inefficiencies.\n3. Use the user's context (level, history, attempts, last error) to tailor your feedback.\n4. Suggest improvements, but do not rewrite the entire solution unless asked.\n5. Use markdown for formatting. If referencing code, use code blocks.\n6. If you list multiple issues or suggestions, use a markdown table or bullet points.\n7. Ask if the user needs further help.\n\n**NOTES:**\n- Be constructive and encouraging.\n- Never reveal the full solution unless explicitly asked.\n- If last_error is present, address it specifically.",
+      "task": "feedbackContext",
       "output_format": "markdown"
     }
   ]
