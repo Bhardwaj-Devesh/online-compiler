@@ -1,7 +1,7 @@
-
+// Simulated code execution for different languages
 export const runCode = async (language: string, code: string, input: string): Promise<string> => {
   try {
-    const response = await fetch(import.meta.env.VITE_BACKEND_CODE_EXECUTE_URL, {
+    const response = await fetch('http://localhost:3000/api/execute', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

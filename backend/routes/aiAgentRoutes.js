@@ -3,35 +3,23 @@ import fetch from 'node-fetch';
 import fs from 'fs';
 import path, { dirname } from 'path';
 import { fileURLToPath } from 'url';
-import dotenv from 'dotenv'
-dotenv.config();
+
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const router = express.Router();
 
 const AGENTS_DIR = path.join(__dirname, '../agents');
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=' + process.env.GEMINI_API_KEY;
+const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=AIzaSyCoCUlzzVgGOZ2hywjqhAearFdjrfk68Vc`;
 
 function loadPromptTemplate(taskType, context) {
   const fileMap = {
     hint: 'hintPrompt.json',
     feedback: 'feedbackPrompt.json',
     explain: 'explainPrompt.json',
-    complexity: 'complexityPrompt.json',
   };
   const fileName = fileMap[taskType] || 'structuredPrompt.json';
   const filePath = path.join(AGENTS_DIR, fileName);
   const template = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
-  
-  // For complexity, only use code_submission and language
-  if (taskType === 'complexity') {
-    template.context = {
-      language: context.language,
-      code_submission: context.code_submission
-    };
-  } else {
-    template.context = { ...template.context, ...context };
-  }
-  
+  template.context = { ...template.context, ...context };
   return template;
 }
 
