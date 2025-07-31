@@ -35,3 +35,6 @@ backend/services/jobs/
 *.njsproj
 *.sln
 *.sw?
+
+.env
+.env.local
