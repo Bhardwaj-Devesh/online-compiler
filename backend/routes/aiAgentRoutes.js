@@ -9,7 +9,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const router = express.Router();
 
 const AGENTS_DIR = path.join(__dirname, '../agents');
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=' + 'AIzaSyBBaYwzNLvuQrXOY1YA8z-CrS2RC2kIKKg';
+const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=' + process.env.GEMINI_API_KEY;
 
 function loadPromptTemplate(taskType, context) {
   const fileMap = {
