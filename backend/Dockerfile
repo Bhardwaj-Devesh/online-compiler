@@ -6,7 +6,7 @@ FROM node:24-alpine
 WORKDIR /app
 
 # Install dependencies
-RUN apt-get update && apt-get install -y g++ openjdk-17-jdk
+RUN apk add --no-cache g++ openjdk17
 
 # Copy package.json and package-lock.json
 COPY package*.json ./
