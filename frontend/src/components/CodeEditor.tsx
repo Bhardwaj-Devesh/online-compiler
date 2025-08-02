@@ -17,11 +17,8 @@ interface CodeEditorProps {
 }
 
 const languages = [
-  { value: 'javascript', label: 'JavaScript' },
-  { value: 'python', label: 'Python' },
   { value: 'cpp', label: 'C++' },
-  { value: 'java', label: 'Java' },
-  { value: 'typescript', label: 'TypeScript' },
+  { value: 'java', label: 'Java' }
 ];
 
 const CodeEditor = ({ 
