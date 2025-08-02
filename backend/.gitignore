@@ -12,19 +12,6 @@ dist
 dist-ssr
 *.local
 
-# Compiled output
-/dist
-/build
-
-# Jobs directory (runtime generated)
-backend/services/jobs/
-
-# VS Code settings
-.vscode/
-
-# Misc
-*.swp 
-
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -37,4 +24,6 @@ backend/services/jobs/
 *.sw?
 
 .env
+.env
 .env.local
+.env.example
