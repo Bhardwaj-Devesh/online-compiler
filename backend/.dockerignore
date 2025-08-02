@@ -1,0 +1,24 @@
+# Dependencies
+node_modules
+
+# Production builds
+dist
+build
+
+# Environment files
+.env
+
+# IDE files
+.vscode
+
+# Git
+.git
+.gitignore
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# dotenv environment variables file
+.env
