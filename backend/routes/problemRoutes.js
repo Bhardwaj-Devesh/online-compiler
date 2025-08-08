@@ -1,5 +1,7 @@
 import express from 'express';
 import { authenticateToken, requireAdmin } from '../middleware/auth.js';
+import multer from 'multer';
+import supabase from '../config/databaseConnect.js';
 import { 
   problems, 
   findProblemById, 
@@ -9,21 +11,25 @@ import {
   getTopicStats 
 } from '../utils/dummyData.js';
 
+const upload = multer();
 const router = express.Router();
 
 // Get all problems (public)
-router.get('/', (req, res) => {
+router.get('/', async(req, res) => {
   try {
     const { topic } = req.query;
-    
-    let filteredProblems = problems;
+
+    let query = supabase.from('problems').select('*');
+
     if (topic) {
-      filteredProblems = problems.filter(problem => 
-        problem.topic_tags.includes(topic)
-      );
+      query = query.contains('topic_tags', [topic]);
     }
 
-    res.json({ problems: filteredProblems });
+    const { data, error } = await query;
+
+    if (error) throw error;
+
+    res.json({ problems: data });
   } catch (error) {
     console.error('Get problems error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -31,13 +37,18 @@ router.get('/', (req, res) => {
 });
 
 // Get problem by ID (public)
-router.get('/:id', (req, res) => {
+router.get('/:id',async (req, res) => {
   try {
-    const problem = findProblemById(req.params.id);
-    if (!problem) {
-      return res.status(404).json({ error: 'Problem not found' });
-    }
-    res.json({ problem });
+    const { data, error } = await supabase
+      .from('problems')
+      .select('*')
+      .eq('id', req.params.id)
+      .single();
+
+    if (error) throw error;
+    if (!data) return res.status(404).json({ error: 'Problem not found' });
+
+    res.json({ problem: data });
   } catch (error) {
     console.error('Get problem error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -99,7 +110,12 @@ router.post('/:id/submit', authenticateToken, async (req, res) => {
 });
 
 // Admin: Add new problem
-router.post('/', authenticateToken, requireAdmin, (req, res) => {
+// authenticateToken
+//requireAdmin
+router.post('/', upload.fields([
+  { name: 'inputFile', maxCount: 1 },
+  { name: 'outputFile', maxCount: 1 }
+]), async(req, res) => {
   try {
     const {
       title,
@@ -113,20 +129,50 @@ router.post('/', authenticateToken, requireAdmin, (req, res) => {
     if (!title || !problem_statement || !constraints || !examples || !topic_tags) {
       return res.status(400).json({ error: 'All fields are required' });
     }
+    // upload input and output files
+    const problemId = crypto.randomUUID();
+    const inputFile = req.files['inputFile']?.[0];
+    const outputFile = req.files['outputFile']?.[0];
+
+    if (!inputFile || !outputFile) {
+      return res.status(400).json({ error: 'Input and output files are required' });
+    }
+
+    const inputPath = `problems/${problemId}/input.txt`;
+    const outputPath = `problems/${problemId}/output.txt`;
+
+    const { error: inputError } = await supabase.storage
+      .from('problems')
+      .upload(inputPath, inputFile.buffer, { contentType: 'text/plain' });
+    
+    if (inputError) throw inputError;
+
+    const { error: outputError } = await supabase.storage
+      .from('problems')
+      .upload(outputPath, outputFile.buffer, { contentType: 'text/plain' });
+
+    if (outputError) throw outputError;
 
     // Create new problem
-    const newProblem = addProblem({
-      title,
-      problem_statement,
-      input_path: `problems/${Date.now()}/input.txt`,
-      output_path: `problems/${Date.now()}/output.txt`,
-      constraints,
-      examples,
-      topic_tags,
-      created_by: req.user.id
-    });
+    const { data, error } = await supabase
+      .from('problems')
+      .insert([{
+        id: problemId,
+        title,
+        problem_statement,
+        constraints,
+        examples: JSON.parse(examples), 
+        topic_tags: JSON.parse(topic_tags),
+        input_path: inputPath,
+        output_path: outputPath,
+        created_by: "c066e2df-328f-4f1c-8fea-d88a8e166fc6"
+      }])
+      .select()
+      .single();
 
-    res.status(201).json({ problem: newProblem });
+    if (error) throw error;
+
+    res.status(201).json({ problem: data });
   } catch (error) {
     console.error('Add problem error:', error);
     res.status(500).json({ error: 'Internal server error' });

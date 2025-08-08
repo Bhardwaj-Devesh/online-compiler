@@ -2,6 +2,7 @@ import express from 'express';
 import bcrypt from 'bcryptjs';
 import { generateToken, authenticateToken } from '../middleware/auth.js';
 import { findUserByEmail, addUser, findUserById } from '../utils/dummyData.js';
+import supabase from '../config/databaseConnect.js';
 
 const router = express.Router();
 
@@ -16,7 +17,12 @@ router.post('/signup', async (req, res) => {
     }
 
     // Check if user already exists
-    const existingUser = findUserByEmail(email);
+     const { data: existingUser, error: findError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('email', email)
+      .single();
+
     if (existingUser) {
       return res.status(400).json({ error: 'User with this email already exists' });
     }
@@ -26,12 +32,13 @@ router.post('/signup', async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, saltRounds);
 
     // Create new user
-    const newUser = addUser({
-      name,
-      email,
-      password: hashedPassword,
-      role: 'user'
-    });
+    const { data: newUser, error: insertError } = await supabase
+      .from('users')
+      .insert([{ name, email, password: hashedPassword, role: 'user' }])
+      .select()
+      .single();
+
+    if (insertError) throw insertError;
 
     // Generate token
     const token = generateToken(newUser);
@@ -59,7 +66,12 @@ router.post('/login', async (req, res) => {
     }
 
     // Find user by email
-    const user = findUserByEmail(email);
+     const { data: user, error: findError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('email', email)
+      .single();
+
     if (!user) {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
@@ -86,9 +98,14 @@ router.post('/login', async (req, res) => {
 });
 
 // Get current user profile
-router.get('/profile', authenticateToken, (req, res) => {
+router.get('/profile', authenticateToken, async (req, res) => {
   try {
-    const user = findUserById(req.user.id);
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', req.user.id)
+      .single();
+      
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
