@@ -2,6 +2,10 @@ import express from 'express';
 import { authenticateToken, requireAdmin } from '../middleware/auth.js';
 import multer from 'multer';
 import supabase from '../config/databaseConnect.js';
+import generateFile from "../services/generateFile.js";
+import executeFile from "../services/execute.js";
+import fs from 'fs';
+
 import { 
   problems, 
   findProblemById, 
@@ -72,7 +76,7 @@ router.get('/:id/submissions', authenticateToken, (req, res) => {
 // Submit solution for a problem
 router.post('/:id/submit', authenticateToken, async (req, res) => {
   try {
-    const { code, language, input } = req.body;
+    const { code, language } = req.body;
     const problemId = req.params.id;
 
     // Validate input
@@ -81,28 +85,79 @@ router.post('/:id/submit', authenticateToken, async (req, res) => {
     }
 
     // Check if problem exists
-    const problem = findProblemById(problemId);
-    if (!problem) {
-      return res.status(404).json({ error: 'Problem not found' });
+    const { data: problem, error: problemError } = await supabase
+      .from("problems")
+      .select("*")
+      .eq("id", problemId)
+      .single();
+
+    if (problemError || !problem) {
+      return res.status(404).json({ error: "Problem not found" });
     }
 
-    // For now, we'll simulate execution and always return success
-    // In a real implementation, you'd run the code against test cases
-    const output = "Simulated output"; // This would be the actual execution result
-    const status = "Success"; // This would be determined by comparing with expected output
+    const { data: inputFile, error: inputError } = await supabase.storage
+      .from("problems")
+      .download(problem.input_path);
+
+    const { data: outputFile, error: outputError } = await supabase.storage
+      .from("problems")
+      .download(problem.output_path);
+
+    if (inputError || outputError) {
+      console.error("File download error:", inputError || outputError);
+      return res.status(500).json({ error: "Error downloading test files" });
+    }
+    
+    const inputData = await inputFile.text();
+    const expectedOutput = await outputFile.text();
+
+    const fileResult = await generateFile(language, code, inputData);
+
+    let filepath = fileResult;
+    let execOptions = {};
+    if ((language === "cpp" || language === "java") && typeof fileResult === "object") {
+      filepath = fileResult.codePath;
+      execOptions = { inputPath: fileResult.inputPath, outputPath: fileResult.outputPath };
+    }
+
+    // 4️⃣ Execute the file
+    const programOutput = await executeFile(filepath, language, execOptions);
+
+    // If C++/Java, read from output file if exists
+    let actualOutput = programOutput;
+    if ((language === "cpp" || language === "java") && execOptions.outputPath) {
+      if (fs.existsSync(execOptions.outputPath)) {
+        actualOutput = fs.readFileSync(execOptions.outputPath, "utf-8");
+      }
+    }
+
+    const status =
+      actualOutput.trim() === expectedOutput.trim() ? "Success" : "Wrong Answer";
 
     // Create submission
-    const submission = addSubmission({
-      user_id: req.user.id,
-      problem_id: problemId,
-      code,
-      language,
-      input: input || '',
-      output,
-      status
+    const { data: submission, error: submissionError } = await supabase
+      .from("submissions")
+      .insert([
+        {
+          user_id: req.user.id,
+          problem_id: problemId,
+          code,
+          language,
+          status,
+        },
+      ])
+      .select()
+      .single();
+
+     if (submissionError) throw submissionError;
+
+    return res.status(201).json({
+      status,
+      expected_output: expectedOutput,
+      actual_output: actualOutput,
+      submission,
     });
 
-    res.status(201).json({ submission });
   } catch (error) {
     console.error('Submit solution error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -110,9 +165,8 @@ router.post('/:id/submit', authenticateToken, async (req, res) => {
 });
 
 // Admin: Add new problem
-// authenticateToken
-//requireAdmin
-router.post('/', upload.fields([
+
+router.post('/',authenticateToken,requireAdmin, upload.fields([
   { name: 'inputFile', maxCount: 1 },
   { name: 'outputFile', maxCount: 1 }
 ]), async(req, res) => {
@@ -165,7 +219,7 @@ router.post('/', upload.fields([
         topic_tags: JSON.parse(topic_tags),
         input_path: inputPath,
         output_path: outputPath,
-        created_by: "c066e2df-328f-4f1c-8fea-d88a8e166fc6"
+        created_by: req.user.id
       }])
       .select()
       .single();
