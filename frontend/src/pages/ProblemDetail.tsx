@@ -43,6 +43,8 @@ const ProblemDetail = () => {
   const [output, setOutput] = useState('');
   const [isRunning, setIsRunning] = useState(false);
   const [activeTab, setActiveTab] = useState('problem');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submissionResult, setSubmissionResult] = useState(null);
 
   useEffect(() => {
     if (id) {
@@ -52,7 +54,7 @@ const ProblemDetail = () => {
 
   const fetchProblem = async () => {
     try {
-      const response = await fetch(`http://localhost:3000/api/problems/${id}`);
+      const response = await fetch(import.meta.env.VITE_BACKEND_URL + `/problems/${id}`);
       if (response.ok) {
         const data = await response.json();
         setProblem(data.problem);
@@ -74,25 +76,7 @@ const ProblemDetail = () => {
 
   const setDefaultCode = (problem: Problem) => {
     const defaultCodeMap = {
-      javascript: `// ${problem.title}
-// Write your solution here
-
-function solution(input) {
-    // Your code here
-    return input;
-}
-
-// Test your solution
-console.log(solution("test input"));`,
-      python: `# ${problem.title}
-# Write your solution here
-
-def solution(input):
-    # Your code here
-    return input
-
-# Test your solution
-print(solution("test input"))`,
+      
       cpp: `#include <iostream>
 #include <string>
 using namespace std;
@@ -111,7 +95,7 @@ int main() {
     cout << solution(input) << endl;
     return 0;
 }`,
-      java: `import java.util.*;
+  java: `import java.util.*;
 
 // ${problem.title}
 // Write your solution here
@@ -131,7 +115,7 @@ public class Solution {
 }`
     };
     
-    setCode(defaultCodeMap[language as keyof typeof defaultCodeMap] || defaultCodeMap.javascript);
+    setCode(defaultCodeMap[language as keyof typeof defaultCodeMap] || defaultCodeMap.cpp);
   };
 
   const handleLanguageChange = (newLanguage: string) => {
@@ -195,9 +179,10 @@ public class Solution {
       });
       return;
     }
-
+    setIsSubmitting(true);
+    setSubmissionResult(null);
     try {
-      const response = await fetch(`http://localhost:3000/api/problems/${id}/submit`, {
+      const response = await fetch(import.meta.env.VITE_BACKEND_URL + `/problems/${id}/submit`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -213,10 +198,20 @@ public class Solution {
       const data = await response.json();
 
       if (response.ok) {
+      setSubmissionResult(data);
+
+      if (data.status === "Success") {
         toast({
-          title: "Solution submitted!",
-          description: "Your solution has been recorded.",
+          title: "Successful Submission 🎉",
+          description: "Your solution passed all test cases.",
         });
+      } else {
+        toast({
+          title: "Wrong Answer ❌",
+          description: "Your solution did not produce the expected output.",
+          variant: "destructive",
+        });
+      }
       } else {
         toast({
           title: "Submission failed",
@@ -231,6 +226,8 @@ public class Solution {
         description: "Network error. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -287,9 +284,11 @@ public class Solution {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Button asChild variant="outline">
-                <Link to="/dashboard">Dashboard</Link>
-              </Button>
+              {user?.role !== "admin" && (
+                <Button asChild>
+                  <Link to="/dashboard">Dashboard</Link>
+                </Button>
+              )}
               <Button asChild>
                 <Link to="/">Code Editor</Link>
               </Button>
@@ -394,7 +393,6 @@ public class Solution {
                   onRun={handleRun}
                   theme="light"
                   fontFamily="Fira Code"
-                  onSettingsClick={() => {}}
                 />
               </CardContent>
             </Card>
@@ -425,24 +423,44 @@ public class Solution {
                     {isRunning ? 'Running...' : 'Run Code'}
                   </Button>
                   <Button 
-                    onClick={handleSubmit}
-                    disabled={!isAuthenticated || isRunning}
-                    variant="outline"
-                    className="flex-1"
-                  >
-                    <CheckCircle className="h-4 w-4 mr-2" />
-                    Submit Solution
+                      onClick={handleSubmit}
+                      disabled={!isAuthenticated || isRunning || isSubmitting}
+                      variant="outline"
+                      className="flex-1"
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2"></div>
+                          Submitting...
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle className="h-4 w-4 mr-2" />
+                          Submit Solution
+                        </>
+                      )}
                   </Button>
+                  
                 </div>
                 
-                <div>
-                  <label className="text-sm font-medium">Output:</label>
-                  <pre className="w-full h-32 p-2 border rounded-md bg-muted font-mono text-sm overflow-auto">
-                    {output || 'Output will appear here...'}
-                  </pre>
-                </div>
-              </CardContent>
-            </Card>
+                {submissionResult && (
+                    <div className="mt-4 p-3 border rounded-md bg-muted text-sm">
+                      <p className={`font-bold ${submissionResult.status === "Success" ? "text-green-600" : "text-red-600"}`}>
+                        {submissionResult.status === "Success" ? "✅ Successful Submission" : "❌ Wrong Answer"}
+                      </p>
+                      {submissionResult.status !== "Success" && (
+                        <div className="mt-2">
+                          <p className="font-medium">Expected Output:</p>
+                          <pre className="bg-background p-2 rounded">{submissionResult.expected_output}</pre>
+                          <p className="font-medium mt-2">Your Output:</p>
+                          <pre className="bg-background p-2 rounded">{submissionResult.actual_output}</pre>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
           </div>
         </div>
       </div>

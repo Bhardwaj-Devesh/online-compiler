@@ -20,11 +20,7 @@ const Login = () => {
     e.preventDefault();
     setIsLoading(true);
     
-    const success = await login(email, password);
-    if (success) {
-      navigate('/dashboard');
-    }
-    
+    await login(email, password);
     setIsLoading(false);
   };
 
@@ -107,11 +103,6 @@ const Login = () => {
             </p>
           </div>
           
-          <div className="mt-4 text-center">
-            <p className="text-xs text-muted-foreground">
-              Demo credentials: admin@example.com / password
-            </p>
-          </div>
         </CardContent>
       </Card>
     </div>

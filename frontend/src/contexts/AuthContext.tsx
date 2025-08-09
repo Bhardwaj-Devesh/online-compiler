@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { Link, useNavigate } from 'react-router-dom';
+
 
 interface User {
   id: string;
@@ -34,6 +36,8 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+  const navigate = useNavigate();
+
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -51,7 +55,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const verifyToken = async (tokenToVerify: string) => {
     try {
-      const response = await fetch('http://localhost:3000/api/auth/verify', {
+      const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/auth/verify', {
         headers: {
           'Authorization': `Bearer ${tokenToVerify}`,
           'Content-Type': 'application/json',
@@ -75,7 +79,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
-      const response = await fetch('http://localhost:3000/api/auth/login', {
+      const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -94,7 +98,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           title: "Login successful!",
           description: `Welcome back, ${data.user.name}!`,
         });
-        
+        if (data.user.role === "admin") {
+          navigate("/admin");
+        } else {
+          navigate("/dashboard");
+        }
         return true;
       } else {
         toast({
@@ -117,7 +125,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const signup = async (name: string, email: string, password: string): Promise<boolean> => {
     try {
-      const response = await fetch('http://localhost:3000/api/auth/signup', {
+      const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/auth/signup', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -166,6 +174,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       title: "Logged out",
       description: "You have been successfully logged out.",
     });
+    navigate('/');
   };
 
   const value: AuthContextType = {

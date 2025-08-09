@@ -74,7 +74,7 @@ const InputOutput = ({ input, onInputChange, output, isRunning, fontFamily, lang
             last_error: ''
           };
 
-      const res = await fetch(import.meta.env.VITE_BACKEND_AGENT_URL, {
+      const res = await fetch(import.meta.env.VITE_BACKEND_URL + '/ai-agent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestBody)

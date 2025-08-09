@@ -1,7 +1,7 @@
 
 export const runCode = async (language: string, code: string, input: string): Promise<string> => {
   try {
-    const response = await fetch(import.meta.env.VITE_BACKEND_CODE_EXECUTE_URL, {
+    const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/execute', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

@@ -1,5 +1,6 @@
 import express from 'express';
 import { authenticateToken } from '../middleware/auth.js';
+import supabase from '../config/databaseConnect.js';
 import { 
   getUserSubmissions, 
   getTopicStats, 
@@ -10,30 +11,53 @@ import {
 const router = express.Router();
 
 // Get user dashboard analytics
-router.get('/analytics', authenticateToken, (req, res) => {
+router.get('/analytics', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
     
     // Get user submissions
-    const userSubmissions = getUserSubmissions(userId);
-    
+    const { data: userSubmissions, error: submissionsError } = await supabase
+      .from('submissions')
+      .select('*')
+      .eq('user_id', userId);
+
+    if (submissionsError) throw submissionsError;
+
     // Get topic-wise solved stats
-    const topicStats = getTopicStats(userId);
+     const { data: problems, error: problemsError } = await supabase
+      .from('problems')
+      .select('*');
+
+    if (problemsError) throw problemsError;
     
     // Calculate overall stats
     const totalSubmissions = userSubmissions.length;
     const successfulSubmissions = userSubmissions.filter(s => s.status === 'Success').length;
-    const successRate = totalSubmissions > 0 ? (successfulSubmissions / totalSubmissions) * 100 : 0;
-    
+    const successRate = totalSubmissions > 0
+      ? (successfulSubmissions / totalSubmissions) * 100
+      : 0;
     // Get unique problems solved
     const solvedProblems = new Set(
       userSubmissions
         .filter(s => s.status === 'Success')
         .map(s => s.problem_id)
     );
-    
+
+    // Topic stats
+    const topicStats = {};
+    userSubmissions.forEach(submission => {
+      if (submission.status === 'Success') {
+        const problem = problems.find(p => p.id === submission.problem_id);
+        if (problem && problem.topic_tags) {
+          problem.topic_tags.forEach(topic => {
+            topicStats[topic] = (topicStats[topic] || 0) + 1;
+          });
+        }
+      }
+    });
+
     // Get recent submissions (last 5)
-    const recentSubmissions = userSubmissions
+    const recentSubmissions = [...userSubmissions]
       .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
       .slice(0, 5);
     
@@ -54,7 +78,10 @@ router.get('/analytics', authenticateToken, (req, res) => {
         successfulSubmissions,
         successRate: Math.round(successRate * 100) / 100,
         problemsSolved: solvedProblems.size,
-        topicStats,
+        topicStats: Object.entries(topicStats).map(([topic, count]) => ({
+          topic,
+          count
+        })),
         recentSubmissions,
         problemsByTopic
       }

@@ -3,6 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { 
   Trophy, 
@@ -33,7 +34,7 @@ interface Analytics {
 }
 
 const Dashboard = () => {
-  const { user, token } = useAuth();
+  const { user,logout, token } = useAuth();
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -43,7 +44,7 @@ const Dashboard = () => {
 
   const fetchAnalytics = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/dashboard/analytics', {
+      const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/dashboard/analytics', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -86,23 +87,55 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="border-b bg-card">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold">Dashboard</h1>
-              <p className="text-muted-foreground">
-                Welcome back, {user?.name}! Here's your coding progress.
-              </p>
-            </div>
-            <div className="flex items-center gap-4">
-              <Button asChild>
-                <Link to="/problems">View Problems</Link>
-              </Button>
-              <Button asChild variant="outline">
-                <Link to="/">Code Editor</Link>
-              </Button>
-            </div>
+      <div className="container mx-auto px-6 py-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">Dashboard</h1>
+            <p className="text-muted-foreground">
+              Welcome back, {user?.name || "Guest"}! Here's your coding progress.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-4">
+            {/* My Account Dropdown */}
+            <Button asChild>
+              <Link to="/problems">View Problems</Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link to="/">Code Editor</Link>
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  {user?.name || "Guest"}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link to="/dashboard">Dashboard</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/problems">Problems</Link>
+                </DropdownMenuItem>
+                {user?.role === "admin" && (
+                  <DropdownMenuItem asChild>
+                    <Link to="/admin">Admin Panel</Link>
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={logout}
+                  className="text-red-600"
+                >
+                  Logout
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+          
           </div>
         </div>
       </div>

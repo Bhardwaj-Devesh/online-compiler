@@ -1,67 +1,58 @@
 import express from 'express';
 import { authenticateToken, requireAdmin } from '../middleware/auth.js';
-import { 
-  problems, 
-  findProblemById, 
-  addProblem, 
-  getUserSubmissions, 
-  addSubmission,
-  getTopicStats 
-} from '../utils/dummyData.js';
+import multer from 'multer';
+import ProblemService from '../services/ProblemService.js';
+import SubmissionService from '../services/SubmissionService.js';
 
+const upload = multer();
 const router = express.Router();
 
+// Initialize services
+const problemService = new ProblemService();
+const submissionService = new SubmissionService();
+
 // Get all problems (public)
-router.get('/', (req, res) => {
+router.get('/', async(req, res) => {
   try {
     const { topic } = req.query;
-    
-    let filteredProblems = problems;
-    if (topic) {
-      filteredProblems = problems.filter(problem => 
-        problem.topic_tags.includes(topic)
-      );
-    }
-
-    res.json({ problems: filteredProblems });
+    const result = await problemService.getAllProblems(topic);
+    res.json(result);
   } catch (error) {
     console.error('Get problems error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: error.message || 'Internal server error' });
   }
 });
 
 // Get problem by ID (public)
-router.get('/:id', (req, res) => {
+router.get('/:id', async (req, res) => {
   try {
-    const problem = findProblemById(req.params.id);
-    if (!problem) {
-      return res.status(404).json({ error: 'Problem not found' });
-    }
-    res.json({ problem });
+    const result = await problemService.getProblemById(req.params.id);
+    res.json(result);
   } catch (error) {
     console.error('Get problem error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    if (error.message === 'Problem not found') {
+      res.status(404).json({ error: error.message });
+    } else {
+      res.status(500).json({ error: error.message || 'Internal server error' });
+    }
   }
 });
 
 // Get user's submissions for a problem
-router.get('/:id/submissions', authenticateToken, (req, res) => {
+router.get('/:id/submissions', authenticateToken, async (req, res) => {
   try {
-    const userSubmissions = getUserSubmissions(req.user.id);
-    const problemSubmissions = userSubmissions.filter(
-      submission => submission.problem_id === req.params.id
-    );
-    res.json({ submissions: problemSubmissions });
+    const result = await submissionService.getUserSubmissions(req.user.id, req.params.id);
+    res.json(result);
   } catch (error) {
     console.error('Get submissions error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: error.message || 'Internal server error' });
   }
 });
 
-// Submit solution for a problem
+
 router.post('/:id/submit', authenticateToken, async (req, res) => {
   try {
-    const { code, language, input } = req.body;
+    const { code, language } = req.body;
     const problemId = req.params.id;
 
     // Validate input
@@ -69,105 +60,74 @@ router.post('/:id/submit', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'Code and language are required' });
     }
 
-    // Check if problem exists
-    const problem = findProblemById(problemId);
-    if (!problem) {
-      return res.status(404).json({ error: 'Problem not found' });
-    }
+    // Get problem files
+    const problemFiles = await problemService.getProblemFiles(problemId);
 
-    // For now, we'll simulate execution and always return success
-    // In a real implementation, you'd run the code against test cases
-    const output = "Simulated output"; // This would be the actual execution result
-    const status = "Success"; // This would be determined by comparing with expected output
+    // Submit solution
+    const result = await submissionService.submitSolution(
+      problemId, 
+      req.user.id, 
+      code, 
+      language, 
+      problemFiles
+    );
 
-    // Create submission
-    const submission = addSubmission({
-      user_id: req.user.id,
-      problem_id: problemId,
-      code,
-      language,
-      input: input || '',
-      output,
-      status
-    });
+    return res.status(201).json(result);
 
-    res.status(201).json({ submission });
   } catch (error) {
     console.error('Submit solution error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    if (error.message === 'Problem not found') {
+      res.status(404).json({ error: error.message });
+    } else {
+      res.status(500).json({ error: error.message || 'Internal server error' });
+    }
   }
 });
 
 // Admin: Add new problem
-router.post('/', authenticateToken, requireAdmin, (req, res) => {
+router.post('/', authenticateToken, requireAdmin, upload.fields([
+  { name: 'inputFile', maxCount: 1 },
+  { name: 'outputFile', maxCount: 1 }
+]), async(req, res) => {
   try {
-    const {
-      title,
-      problem_statement,
-      constraints,
-      examples,
-      topic_tags
-    } = req.body;
-
-    // Validate input
-    if (!title || !problem_statement || !constraints || !examples || !topic_tags) {
-      return res.status(400).json({ error: 'All fields are required' });
-    }
-
-    // Create new problem
-    const newProblem = addProblem({
-      title,
-      problem_statement,
-      input_path: `problems/${Date.now()}/input.txt`,
-      output_path: `problems/${Date.now()}/output.txt`,
-      constraints,
-      examples,
-      topic_tags,
-      created_by: req.user.id
-    });
-
-    res.status(201).json({ problem: newProblem });
+    const result = await problemService.createProblem(req.body, req.files, req.user.id);
+    res.status(201).json(result);
   } catch (error) {
     console.error('Add problem error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: error.message || 'Internal server error' });
   }
 });
 
 // Admin: Update problem
-router.put('/:id', authenticateToken, requireAdmin, (req, res) => {
+router.put('/:id', authenticateToken, requireAdmin, upload.fields([
+  { name: 'inputFile', maxCount: 1 },
+  { name: 'outputFile', maxCount: 1 }
+]), async (req, res) => {
   try {
-    const problemIndex = problems.findIndex(p => p.id === req.params.id);
-    if (problemIndex === -1) {
-      return res.status(404).json({ error: 'Problem not found' });
-    }
-
-    const updatedProblem = {
-      ...problems[problemIndex],
-      ...req.body,
-      id: req.params.id // Ensure ID doesn't change
-    };
-
-    problems[problemIndex] = updatedProblem;
-    res.json({ problem: updatedProblem });
+    const result = await problemService.updateProblem(req.params.id, req.body, req.files);
+    res.json(result);
   } catch (error) {
     console.error('Update problem error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    if (error.message === 'Problem not found') {
+      res.status(404).json({ error: error.message });
+    } else {
+      res.status(500).json({ error: error.message || 'Internal server error' });
+    }
   }
 });
 
 // Admin: Delete problem
-router.delete('/:id', authenticateToken, requireAdmin, (req, res) => {
+router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const problemIndex = problems.findIndex(p => p.id === req.params.id);
-    if (problemIndex === -1) {
-      return res.status(404).json({ error: 'Problem not found' });
-    }
-
-    problems.splice(problemIndex, 1);
-    res.json({ message: 'Problem deleted successfully' });
+    const result = await problemService.deleteProblem(req.params.id);
+    res.json(result);
   } catch (error) {
     console.error('Delete problem error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    if (error.message === 'Problem not found') {
+      res.status(404).json({ error: error.message });
+    } else {
+      res.status(500).json({ error: error.message || 'Internal server error' });
+    }
   }
 });
 
