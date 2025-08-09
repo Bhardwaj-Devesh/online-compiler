@@ -45,7 +45,7 @@ const Problems = () => {
 
   const fetchProblems = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/problems');
+      const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/problems');
       if (response.ok) {
         const data = await response.json();
         setProblems(data.problems);

@@ -55,7 +55,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const verifyToken = async (tokenToVerify: string) => {
     try {
-      const response = await fetch('http://localhost:3000/api/auth/verify', {
+      const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/auth/verify', {
         headers: {
           'Authorization': `Bearer ${tokenToVerify}`,
           'Content-Type': 'application/json',
@@ -79,7 +79,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
-      const response = await fetch('http://localhost:3000/api/auth/login', {
+      const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -125,7 +125,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const signup = async (name: string, email: string, password: string): Promise<boolean> => {
     try {
-      const response = await fetch('http://localhost:3000/api/auth/signup', {
+      const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/auth/signup', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

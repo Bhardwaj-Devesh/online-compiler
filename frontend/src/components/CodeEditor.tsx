@@ -13,7 +13,7 @@ interface CodeEditorProps {
   onRun: () => void;
   theme: 'light' | 'dark';
   fontFamily: string;
-  onSettingsClick: () => void; // Add prop for settings popup
+ 
 }
 
 const languages = [
@@ -28,8 +28,7 @@ const CodeEditor = ({
   onCodeChange, 
   onRun,
   theme,
-  fontFamily,
-  onSettingsClick // Add prop
+  fontFamily, // Add prop
 }: CodeEditorProps) => {
   const { toast } = useToast();
 
@@ -101,15 +100,7 @@ const CodeEditor = ({
                 <Download className="h-4 w-4" />
                 
               </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onSettingsClick}
-                className="gap-2"
-                aria-label="Editor Settings"
-              >
-                <SettingsIcon className="h-4 w-4" />
-              </Button>
+              
               <Button
                 onClick={onRun}
                 className="gap-2 bg-gradient-primary hover:opacity-90"

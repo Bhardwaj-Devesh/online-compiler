@@ -27,6 +27,8 @@ interface Problem {
   id: string;
   title: string;
   problem_statement: string;
+  constraints: string;
+  examples: Array<{ input: string; output: string }>;
   topic_tags: string[];
   created_at: string;
 }
@@ -38,6 +40,7 @@ const AdminPanel = () => {
   const [problems, setProblems] = useState<Problem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('problems');
+  const [editingProblem, setEditingProblem] = useState<Problem | null>(null);
   
   // Form state for adding new problem
   const [newProblem, setNewProblem] = useState({
@@ -65,7 +68,7 @@ const AdminPanel = () => {
 
   const fetchProblems = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/problems', {
+      const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/problems', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -105,7 +108,7 @@ const AdminPanel = () => {
     formData.append('outputFile', newProblem.outputFile);
 
     try {
-      const response = await fetch('http://localhost:3000/api/problems', {
+      const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/problems', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`, // no Content-Type, browser will set it for FormData
@@ -155,7 +158,7 @@ const AdminPanel = () => {
     }
 
     try {
-      const response = await fetch(`http://localhost:3000/api/problems/${problemId}`, {
+      const response = await fetch(import.meta.env.VITE_BACKEND_URL + `/problems/${problemId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -170,9 +173,10 @@ const AdminPanel = () => {
         });
         fetchProblems();
       } else {
+        const data = await response.json();
         toast({
           title: "Error",
-          description: "Failed to delete problem",
+          description: data.error || "Failed to delete problem",
           variant: "destructive",
         });
       }
@@ -184,6 +188,107 @@ const AdminPanel = () => {
         variant: "destructive",
       });
     }
+  };
+
+  const handleEditProblem = (problem: Problem) => {
+    setEditingProblem(problem);
+    setNewProblem({
+      title: problem.title,
+      problem_statement: problem.problem_statement,
+      constraints: problem.constraints,
+      examples: problem.examples.length > 0 ? problem.examples : [{ input: '', output: '' }],
+      topic_tags: problem.topic_tags.length > 0 ? problem.topic_tags : [''],
+      inputFile: null,
+      outputFile: null,
+    });
+    setActiveTab('add-problem');
+  };
+
+  const handleUpdateProblem = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!editingProblem) return;
+
+    if (!newProblem.title || !newProblem.problem_statement || !newProblem.constraints) {
+      toast({
+        title: "Validation Error",
+        description: "Please fill in all required fields.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('title', newProblem.title);
+    formData.append('problem_statement', newProblem.problem_statement);
+    formData.append('constraints', newProblem.constraints);
+    formData.append('examples', JSON.stringify(newProblem.examples));
+    formData.append('topic_tags', JSON.stringify(newProblem.topic_tags.filter(tag => tag.trim() !== '')));
+    
+    if (newProblem.inputFile) {
+      formData.append('inputFile', newProblem.inputFile);
+    }
+    if (newProblem.outputFile) {
+      formData.append('outputFile', newProblem.outputFile);
+    }
+
+    try {
+      const response = await fetch(import.meta.env.VITE_BACKEND_URL + `/problems/${editingProblem.id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      if (response.ok) {
+        toast({
+          title: "Success",
+          description: "Problem updated successfully!",
+        });
+
+        setEditingProblem(null);
+        setNewProblem({
+          title: '',
+          problem_statement: '',
+          constraints: '',
+          examples: [{ input: '', output: '' }],
+          topic_tags: [''],
+          inputFile: null,
+          outputFile: null,
+        });
+        setActiveTab('problems');
+        fetchProblems();
+      } else {
+        const data = await response.json();
+        toast({
+          title: "Error",
+          description: data.error || "Failed to update problem",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Update problem error:', error);
+      toast({
+        title: "Error",
+        description: "Network error. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingProblem(null);
+    setNewProblem({
+      title: '',
+      problem_statement: '',
+      constraints: '',
+      examples: [{ input: '', output: '' }],
+      topic_tags: [''],
+      inputFile: null,
+      outputFile: null,
+    });
+    setActiveTab('problems');
   };
 
   const addExample = () => {
@@ -318,7 +423,19 @@ const AdminPanel = () => {
           <TabsContent value="problems" className="space-y-6">
             <div className="flex items-center justify-between">
               <h2 className="text-2xl font-bold">Problems Management</h2>
-              <Button onClick={() => setActiveTab('add-problem')}>
+              <Button onClick={() => {
+                setEditingProblem(null);
+                setNewProblem({
+                  title: '',
+                  problem_statement: '',
+                  constraints: '',
+                  examples: [{ input: '', output: '' }],
+                  topic_tags: [''],
+                  inputFile: null,
+                  outputFile: null,
+                });
+                setActiveTab('add-problem');
+              }}>
                 <Plus className="h-4 w-4 mr-2" />
                 Add New Problem
               </Button>
@@ -355,7 +472,11 @@ const AdminPanel = () => {
                             <Eye className="h-4 w-4" />
                           </Link>
                         </Button>
-                        <Button size="sm" variant="outline">
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => handleEditProblem(problem)}
+                        >
                           <Edit className="h-4 w-4" />
                         </Button>
                         <Button 
@@ -373,13 +494,15 @@ const AdminPanel = () => {
             </div>
           </TabsContent>
 
-          {/* Add Problem Tab */}
+          {/* Add/Edit Problem Tab */}
           <TabsContent value="add-problem" className="space-y-6">
-            <h2 className="text-2xl font-bold">Add New Problem</h2>
+            <h2 className="text-2xl font-bold">
+              {editingProblem ? 'Edit Problem' : 'Add New Problem'}
+            </h2>
             
             <Card>
               <CardContent className="pt-6">
-                <form onSubmit={handleAddProblem} className="space-y-6">
+                <form onSubmit={editingProblem ? handleUpdateProblem : handleAddProblem} className="space-y-6">
                   <div className="space-y-2">
                     <Label htmlFor="title">Problem Title *</Label>
                     <Input
@@ -493,41 +616,53 @@ const AdminPanel = () => {
                       ))}
                     </div>
                     <div className="space-y-2">
-                    
-                    <Label htmlFor="inputFile">Input File *</Label>
-                    <Input
-                      id="inputFile"
-                      type="file"
-                      accept=".txt"
-                      onChange={(e) => setNewProblem(prev => ({ ...prev, inputFile: e.target.files?.[0] || null }))}
-                      required
-                    />
-                  </div>
+                      <Label htmlFor="inputFile">
+                        Input File {!editingProblem && '*'}
+                      </Label>
+                      <Input
+                        id="inputFile"
+                        type="file"
+                        accept=".txt"
+                        onChange={(e) => setNewProblem(prev => ({ ...prev, inputFile: e.target.files?.[0] || null }))}
+                        required={!editingProblem}
+                      />
+                      {editingProblem && (
+                        <p className="text-sm text-muted-foreground">
+                          Leave empty to keep the existing file
+                        </p>
+                      )}
+                    </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="outputFile">Output File *</Label>
-                    <Input
-                      id="outputFile"
-                      type="file"
-                      accept=".txt"
-                      onChange={(e) => setNewProblem(prev => ({ ...prev, outputFile: e.target.files?.[0] || null }))}
-                      required
-                    />
-                  </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="outputFile">
+                        Output File {!editingProblem && '*'}
+                      </Label>
+                      <Input
+                        id="outputFile"
+                        type="file"
+                        accept=".txt"
+                        onChange={(e) => setNewProblem(prev => ({ ...prev, outputFile: e.target.files?.[0] || null }))}
+                        required={!editingProblem}
+                      />
+                      {editingProblem && (
+                        <p className="text-sm text-muted-foreground">
+                          Leave empty to keep the existing file
+                        </p>
+                      )}
+                    </div>
                   </div>
                       
                   <div className="flex gap-4">
                     <Button type="submit" className="flex-1">
-                      Add Problem
+                      {editingProblem ? 'Update Problem' : 'Add Problem'}
                     </Button>
                     <Button 
                       type="button" 
                       variant="outline" 
-                      onClick={() => setActiveTab('problems')}
+                      onClick={editingProblem ? handleCancelEdit : () => setActiveTab('problems')}
                     >
                       Cancel
                     </Button>
-                    
                   </div>
                 </form>
               </CardContent>

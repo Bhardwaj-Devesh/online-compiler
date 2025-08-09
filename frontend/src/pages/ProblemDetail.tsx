@@ -54,7 +54,7 @@ const ProblemDetail = () => {
 
   const fetchProblem = async () => {
     try {
-      const response = await fetch(`http://localhost:3000/api/problems/${id}`);
+      const response = await fetch(import.meta.env.VITE_BACKEND_URL + `/problems/${id}`);
       if (response.ok) {
         const data = await response.json();
         setProblem(data.problem);
@@ -76,25 +76,7 @@ const ProblemDetail = () => {
 
   const setDefaultCode = (problem: Problem) => {
     const defaultCodeMap = {
-      javascript: `// ${problem.title}
-// Write your solution here
-
-function solution(input) {
-    // Your code here
-    return input;
-}
-
-// Test your solution
-console.log(solution("test input"));`,
-      python: `# ${problem.title}
-# Write your solution here
-
-def solution(input):
-    # Your code here
-    return input
-
-# Test your solution
-print(solution("test input"))`,
+      
       cpp: `#include <iostream>
 #include <string>
 using namespace std;
@@ -113,7 +95,7 @@ int main() {
     cout << solution(input) << endl;
     return 0;
 }`,
-      java: `import java.util.*;
+  java: `import java.util.*;
 
 // ${problem.title}
 // Write your solution here
@@ -133,7 +115,7 @@ public class Solution {
 }`
     };
     
-    setCode(defaultCodeMap[language as keyof typeof defaultCodeMap] || defaultCodeMap.javascript);
+    setCode(defaultCodeMap[language as keyof typeof defaultCodeMap] || defaultCodeMap.cpp);
   };
 
   const handleLanguageChange = (newLanguage: string) => {
@@ -200,7 +182,7 @@ public class Solution {
     setIsSubmitting(true);
     setSubmissionResult(null);
     try {
-      const response = await fetch(`http://localhost:3000/api/problems/${id}/submit`, {
+      const response = await fetch(import.meta.env.VITE_BACKEND_URL + `/problems/${id}/submit`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -411,7 +393,6 @@ public class Solution {
                   onRun={handleRun}
                   theme="light"
                   fontFamily="Fira Code"
-                  onSettingsClick={() => {}}
                 />
               </CardContent>
             </Card>

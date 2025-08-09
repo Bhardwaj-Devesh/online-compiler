@@ -44,7 +44,7 @@ const Dashboard = () => {
 
   const fetchAnalytics = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/dashboard/analytics', {
+      const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/dashboard/analytics', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
