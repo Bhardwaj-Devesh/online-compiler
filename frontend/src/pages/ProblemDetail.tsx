@@ -412,7 +412,12 @@ public class Solution {
                     placeholder="Enter test input..."
                   />
                 </div>
-                
+                <div>
+                  <label className="text-sm font-medium">Output:</label>
+                  <pre className="w-full min-h-[80px] p-2 border rounded-md font-mono text-sm bg-muted whitespace-pre-wrap">
+                    {output || "Run your code to see output here..."}
+                  </pre>
+                </div>
                 <div className="flex gap-2">
                   <Button 
                     onClick={handleRun} 
