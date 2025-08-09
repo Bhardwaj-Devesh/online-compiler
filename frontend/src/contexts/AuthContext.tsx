@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { Link, useNavigate } from 'react-router-dom';
+
 
 interface User {
   id: string;
@@ -34,6 +36,8 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+  const navigate = useNavigate();
+
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -94,7 +98,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           title: "Login successful!",
           description: `Welcome back, ${data.user.name}!`,
         });
-        
+        if (data.user.role === "admin") {
+          navigate("/admin");
+        } else {
+          navigate("/dashboard");
+        }
         return true;
       } else {
         toast({
@@ -166,6 +174,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       title: "Logged out",
       description: "You have been successfully logged out.",
     });
+    navigate('/');
   };
 
   const value: AuthContextType = {

@@ -40,42 +40,40 @@ const Header = () => {
         <div className="flex items-center gap-3">
           {/* Navigation Links */}
           <div className="hidden md:flex items-center gap-2">
-            <Button asChild variant="ghost" size="sm">
-              <Link to="/">Code Editor</Link>
-            </Button>
+          
             {isAuthenticated && (
               <>
-                <Button asChild variant="ghost" size="sm">
-                  <Link to="/problems">Problems</Link>
-                </Button>
+               
                 <Button asChild variant="ghost" size="sm">
                   <Link to="/dashboard">Dashboard</Link>
                 </Button>
-                {user?.role === 'admin' && (
-                  <Button asChild variant="ghost" size="sm">
-                    <Link to="/admin">Admin</Link>
-                  </Button>
-                )}
+                
               </>
             )}
           </div>
 
           {/* GitHub Link */}
-          <Button
-            variant="outline"
-            size="sm"
-            asChild
-            className="gap-2"
-          >
-            <a 
-              href="https://github.com/Bhardwaj-Devesh" 
-              target="_blank" 
-              rel="noopener noreferrer"
-            >
-              <Github className="h-4 w-4" />
-              GitHub
-            </a>
-          </Button>
+           {!isAuthenticated && (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  asChild
+                  className="gap-2"
+                >
+                  <a 
+                    href="https://github.com/Bhardwaj-Devesh/online-compiler" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                  >
+                    <Github className="h-4 w-4" />
+                    GitHub
+                  </a>
+                </Button>
+                
+              </>
+            )}
+          
 
           {/* Authentication */}
           {isAuthenticated ? (

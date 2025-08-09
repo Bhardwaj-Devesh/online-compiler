@@ -4,7 +4,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { useAuth } from '@/contexts/AuthContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { 
   Search, 
   Filter, 
@@ -12,8 +14,10 @@ import {
   Clock, 
   Target,
   TrendingUp,
-  BookOpen
+  BookOpen,
+  User
 } from 'lucide-react';
+import { DropdownMenuSeparator } from '@radix-ui/react-dropdown-menu';
 
 interface Problem {
   id: string;
@@ -24,6 +28,7 @@ interface Problem {
 }
 
 const Problems = () => {
+  const { user,logout, token } = useAuth();
   const [problems, setProblems] = useState<Problem[]>([]);
   const [filteredProblems, setFilteredProblems] = useState<Problem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -105,9 +110,43 @@ const Problems = () => {
               <Button asChild variant="outline">
                 <Link to="/">Code Editor</Link>
               </Button>
-              <Button asChild>
-                <Link to="/dashboard">Dashboard</Link>
-              </Button>
+                {user?.role !== "admin" && (
+                <Button asChild>
+                  <Link to="/dashboard">Dashboard</Link>
+                </Button>
+              )}
+              <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  {user?.name || "Guest"}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {user?.role !== "admin" && (
+                  <DropdownMenuItem asChild>
+                    <Link to="/dashboard">Dashboard</Link>
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem asChild>
+                  <Link to="/problems">Problems</Link>
+                </DropdownMenuItem>
+                {user?.role === "admin" && (
+                  <DropdownMenuItem asChild>
+                    <Link to="/admin">Admin Panel</Link>
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={logout}
+                  className="text-red-600"
+                >
+                  Logout
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             </div>
           </div>
         </div>

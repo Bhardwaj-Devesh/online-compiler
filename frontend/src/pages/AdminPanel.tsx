@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { 
   Plus, 
   Trash2, 
@@ -17,7 +18,8 @@ import {
   BookOpen, 
   TrendingUp,
   Shield,
-  AlertTriangle
+  AlertTriangle,
+  User
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -30,7 +32,7 @@ interface Problem {
 }
 
 const AdminPanel = () => {
-  const { user, token } = useAuth();
+  const { user,logout, token } = useAuth();
   const { toast } = useToast();
   
   const [problems, setProblems] = useState<Problem[]>([]);
@@ -43,7 +45,9 @@ const AdminPanel = () => {
     problem_statement: '',
     constraints: '',
     examples: [{ input: '', output: '' }],
-    topic_tags: ['']
+    topic_tags: [''],
+    inputFile: null as File | null,   
+    outputFile: null as File | null,  
   });
 
   useEffect(() => {
@@ -81,9 +85,8 @@ const AdminPanel = () => {
 
   const handleAddProblem = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Validate form
-    if (!newProblem.title || !newProblem.problem_statement || !newProblem.constraints) {
+
+    if (!newProblem.title || !newProblem.problem_statement || !newProblem.constraints || !newProblem.inputFile || !newProblem.outputFile) {
       toast({
         title: "Validation Error",
         description: "Please fill in all required fields.",
@@ -92,17 +95,22 @@ const AdminPanel = () => {
       return;
     }
 
+    const formData = new FormData();
+    formData.append('title', newProblem.title);
+    formData.append('problem_statement', newProblem.problem_statement);
+    formData.append('constraints', newProblem.constraints);
+    formData.append('examples', JSON.stringify(newProblem.examples));
+    formData.append('topic_tags', JSON.stringify(newProblem.topic_tags.filter(tag => tag.trim() !== '')));
+    formData.append('inputFile', newProblem.inputFile);
+    formData.append('outputFile', newProblem.outputFile);
+
     try {
       const response = await fetch('http://localhost:3000/api/problems', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`, // no Content-Type, browser will set it for FormData
         },
-        body: JSON.stringify({
-          ...newProblem,
-          topic_tags: newProblem.topic_tags.filter(tag => tag.trim() !== '')
-        }),
+        body: formData,
       });
 
       if (response.ok) {
@@ -110,17 +118,17 @@ const AdminPanel = () => {
           title: "Success",
           description: "Problem added successfully!",
         });
-        
-        // Reset form
+
         setNewProblem({
           title: '',
           problem_statement: '',
           constraints: '',
           examples: [{ input: '', output: '' }],
-          topic_tags: ['']
+          topic_tags: [''],
+          inputFile: null,
+          outputFile: null,
         });
-        
-        // Refresh problems list
+
         fetchProblems();
       } else {
         const data = await response.json();
@@ -139,6 +147,7 @@ const AdminPanel = () => {
       });
     }
   };
+
 
   const handleDeleteProblem = async (problemId: string) => {
     if (!confirm('Are you sure you want to delete this problem?')) {
@@ -262,12 +271,37 @@ const AdminPanel = () => {
               </p>
             </div>
             <div className="flex items-center gap-4">
-              <Button asChild variant="outline">
-                <Link to="/dashboard">Dashboard</Link>
-              </Button>
+              
               <Button asChild>
                 <Link to="/problems">View Problems</Link>
               </Button>
+              <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  {user?.name || "Guest"}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link to="/problems">Problems</Link>
+                </DropdownMenuItem>
+                {user?.role === "admin" && (
+                  <DropdownMenuItem asChild>
+                    <Link to="/admin">Admin Panel</Link>
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={logout}
+                  className="text-red-600"
+                >
+                  Logout
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             </div>
           </div>
         </div>
@@ -275,10 +309,9 @@ const AdminPanel = () => {
 
       <div className="container mx-auto px-6 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="problems">Manage Problems</TabsTrigger>
             <TabsTrigger value="add-problem">Add Problem</TabsTrigger>
-            <TabsTrigger value="stats">Statistics</TabsTrigger>
           </TabsList>
 
           {/* Manage Problems Tab */}
@@ -459,8 +492,30 @@ const AdminPanel = () => {
                         </div>
                       ))}
                     </div>
+                    <div className="space-y-2">
+                    
+                    <Label htmlFor="inputFile">Input File *</Label>
+                    <Input
+                      id="inputFile"
+                      type="file"
+                      accept=".txt"
+                      onChange={(e) => setNewProblem(prev => ({ ...prev, inputFile: e.target.files?.[0] || null }))}
+                      required
+                    />
                   </div>
 
+                  <div className="space-y-2">
+                    <Label htmlFor="outputFile">Output File *</Label>
+                    <Input
+                      id="outputFile"
+                      type="file"
+                      accept=".txt"
+                      onChange={(e) => setNewProblem(prev => ({ ...prev, outputFile: e.target.files?.[0] || null }))}
+                      required
+                    />
+                  </div>
+                  </div>
+                      
                   <div className="flex gap-4">
                     <Button type="submit" className="flex-1">
                       Add Problem
@@ -472,86 +527,9 @@ const AdminPanel = () => {
                     >
                       Cancel
                     </Button>
+                    
                   </div>
                 </form>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Statistics Tab */}
-          <TabsContent value="stats" className="space-y-6">
-            <h2 className="text-2xl font-bold">Platform Statistics</h2>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Problems</CardTitle>
-                  <BookOpen className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{problems.length}</div>
-                  <p className="text-xs text-muted-foreground">
-                    Available problems
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Topics Covered</CardTitle>
-                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {Array.from(new Set(problems.flatMap(p => p.topic_tags))).length}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Different topics
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Admin Actions</CardTitle>
-                  <Shield className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">3</div>
-                  <p className="text-xs text-muted-foreground">
-                    Available actions
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Recent Activity</CardTitle>
-                <CardDescription>
-                  Latest platform activities
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center gap-4 p-3 border rounded-lg">
-                    <BookOpen className="h-5 w-5 text-blue-600" />
-                    <div className="flex-1">
-                      <p className="font-medium">New problem added</p>
-                      <p className="text-sm text-muted-foreground">Maximum Subarray problem was created</p>
-                    </div>
-                    <span className="text-sm text-muted-foreground">2 days ago</span>
-                  </div>
-                  
-                  <div className="flex items-center gap-4 p-3 border rounded-lg">
-                    <Users className="h-5 w-5 text-green-600" />
-                    <div className="flex-1">
-                      <p className="font-medium">User registration</p>
-                      <p className="text-sm text-muted-foreground">New user joined the platform</p>
-                    </div>
-                    <span className="text-sm text-muted-foreground">3 days ago</span>
-                  </div>
-                </div>
               </CardContent>
             </Card>
           </TabsContent>
